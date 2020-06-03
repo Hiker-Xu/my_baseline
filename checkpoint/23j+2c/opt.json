@@ -1,0 +1,21 @@
+{
+    "ckpt": "checkpoint/23j+2c", 
+    "data_dir": "/home/lizhaoxu/Datasets/SURREAL/data/cmu/Bezier/24joints+2control_points/", 
+    "dropout": 0.5, 
+    "epochs": 200, 
+    "exp": "23j+2c", 
+    "is_train": true, 
+    "job": 8, 
+    "linear_size": 1024, 
+    "load": "", 
+    "lr": 0.001, 
+    "lr_decay": 100000, 
+    "lr_gamma": 0.96, 
+    "max_norm": true, 
+    "num_stage": 2, 
+    "procrustes": false, 
+    "resume": false, 
+    "test": false, 
+    "test_batch": 64, 
+    "train_batch": 64
+}

@@ -24,7 +24,7 @@ import src.data_process as data_process
 
 from src.model import LinearModel, weight_init
 from src.datasets.surreal24 import SURREAL24
-
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 
 def main(opt):
     start_epoch = 0
@@ -40,7 +40,7 @@ def main(opt):
     model = LinearModel()
     model = model.cuda()
     model.apply(weight_init)
-    print(">>> total params: {:.2f}M",format(sum(p.numel() for p in model.parameters()) / 1000000.0))
+    print(">>> total params: {:.2f}M".format(sum(p.numel() for p in model.parameters()) / 1000000.0))
     criterion = nn.MSELoss(size_average=True).cuda()
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr)
 
@@ -64,21 +64,19 @@ def main(opt):
     # data loading
     print('>>> loading data...')
     # load statistics data
-    stat_3d = torch.load(.....................)
+    stat_3d = np.load(os.path.join(opt.data_dir, 'stat_3d.npy'), allow_pickle=True).item()
 
     #test
     if opt.test:
         err_set = []
-        for action in actions:
-            print (">>> TEST on _{}_".format(action))
-            test_loader = DataLoader(
-                dataset=SURREAL24(data_path=opt.data_dir, is_train=False),
-                batch_size=opt.test_batch,
-                shuffle=False,
-                num_workers=opt.job,
-                pin_memory=True)
-            _, err_test = test(test_loader, model, criterion, stat_3d, procrustes=opt.procrustes)
-            err_set.append(err_test)
+        test_loader = DataLoader(
+            dataset=SURREAL24(data_path=opt.data_dir, is_train=False),
+            batch_size=opt.test_batch,
+            shuffle=False,
+            num_workers=opt.job,
+            pin_memory=True)
+        _, err_test = test(test_loader, model, criterion, stat_3d, procrustes=opt.procrustes)
+        err_set.append(err_test)
         print (">>>>>> TEST results:")
         print (">>>\nERRORS: {}".format(np.array(err_set).mean()))
         sys.exit()
@@ -157,7 +155,7 @@ def train(train_loader, model, criterion, optimizer,
         if glob_step % lr_decay == 0 or glob_step == 1:
             lr_now = utils.lr_decay(optimizer, glob_step, lr_init, lr_decay, gamma)
         inputs = Variable(inps.cuda())
-        tragets = Variable(tars.cuda(async=True))
+        targets = Variable(tars.cuda(async=True))
 
         outputs = model(inputs)
 
@@ -216,7 +214,7 @@ def test(test_loader, model, criterion, stat_3d, procrustes=False):
         #targets_unnorm = data_process.unNormalizeData(tars.data.cpu().numpy(), stat_3d['mean'], stat_3d['std'], stat_3d['dim_use'])
         #outputs_unnorm = data_process.unNormalizeData(outputs.data.cpu().numpy(), stat_3d['mean'], stat_3d['std'], stat_3d['dim_use'])
         targets_unnorm = data_process.unNormalizeData(tars.data.cpu().numpy(), stat_3d['mean'], stat_3d['std'])
-        outputs_unnorm = data_process.unNormalizeData(outputs.data.cpu().numpy(), stat_3d['mean'])
+        outputs_unnorm = data_process.unNormalizeData(outputs.data.cpu().numpy(), stat_3d['mean'], stat_3d['std'])
 
 
         # remove dim ignored
@@ -230,12 +228,12 @@ def test(test_loader, model, criterion, stat_3d, procrustes=False):
                 _, Z, T, b, c = get_transformation(gt, out, True)
                 out = (b * out.dot(T)) + c
                 #??????????????????51???????
-                outputs_unnorm[ba, :] = out.reshape(1, 72)            
+                outputs_unnorm[ba, :] = out.reshape(1, 51)            
 
-        sqerr = (outputs_use - targets_use) ** 2
-        distance = np.zeros((sqerr.shape[0], 24))
+        sqerr = (outputs_unnorm - targets_unnorm) ** 2
+        distance = np.zeros((sqerr.shape[0], 17))
         dist_idx = 0
-        for k in np.arange(0, 24*3, 3):
+        for k in np.arange(0, 17*3, 3):
             distance[:, dist_idx] = np.sqrt(np.sum(sqerr[:, k:k+3], axis=1))
             dist_idx += 1
         # distance: batchsize * 17

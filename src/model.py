@@ -50,9 +50,15 @@ class LinearModel(nn.Module):
         self.num_stage = num_stage
 
         # 2d joints
-        self.input_size =  24 * 2
+        #self.input_size =  25 * 2
+        #self.input_size =  16 * 2
+        self.input_size =  18 * 2
+
         # 3d joints
-        self.output_size = 24 * 3
+        #self.output_size = 25 * 3
+        #self.output_size = 16 * 3
+        self.output_size = 18 * 3
+
 
         # process input to linear size
         self.w1 = nn.Linear(self.input_size, self.linear_size)
